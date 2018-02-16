@@ -11,6 +11,7 @@
     "typeinfo": "cpp",
     "__locale": "cpp",
     "ios": "cpp",
-    "iostream": "cpp"
+    "iostream": "cpp",
+    "fstream": "cpp"
   }
 }

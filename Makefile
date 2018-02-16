@@ -8,6 +8,9 @@ recompile:
 	make clean
 	make build
 
+install:
+	sudo cp build/binfs /usr/local/bin/binfs
+
 clean:
 	@rm -rf build
 
