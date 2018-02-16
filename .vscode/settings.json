@@ -1,5 +1,16 @@
 {
   "files.associations": {
-    "b64.h": "c"
+    "b64.h": "c",
+    "sstream": "cpp",
+    "__config": "cpp",
+    "__nullptr": "cpp",
+    "exception": "cpp",
+    "initializer_list": "cpp",
+    "new": "cpp",
+    "stdexcept": "cpp",
+    "typeinfo": "cpp",
+    "__locale": "cpp",
+    "ios": "cpp",
+    "iostream": "cpp"
   }
 }
