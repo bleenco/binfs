@@ -1,7 +1,16 @@
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+#define WINDOWS 1
+#endif
+
 #include <string>
 #include <vector>
+#include <cstring>
 #include <sys/stat.h>
+#if !defined(WINDOWS)
 #include <dirent.h>
+#else
+#include <3rdparty/win32/dirent.h>
+#endif
 #include "binfs.h"
 
 std::vector<std::string> get_files(const std::string &path, std::vector<std::string> &paths)
