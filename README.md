@@ -64,6 +64,10 @@ int main()
 
 Not yet implemented.
 
+### Working with us
+
+We would love to receive community support. Whether fixing bugs or creating new features - we would appreciate it! Please read our guideline for contribution and don't forget to check our issues list.
+
 ### Credits
 
 This package was heavily inspired by [go-bindata](https://github.com/jteeuwen/go-bindata) library with same purpose but for `Go` language.
