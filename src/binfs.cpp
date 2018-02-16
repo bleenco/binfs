@@ -113,4 +113,75 @@ std::string BinFS::get_file(const std::string &filename)
   throw std::runtime_error(filename + " not found!");
 }
 
+void BinFS::output_hpp_file(const std::string &filename)
+{
+  std::ofstream out;
+  out.open(filename);
+
+  out << "#ifndef _BINFS_OUTPUT_HPP_" << std::endl;
+  out << "#define _BINFS_OUTPUT_HPP_" << std::endl;
+  out << std::endl;
+  out << "#include <string>" << std::endl;
+  out << "#include <vector>" << std::endl;
+  out << "#include <iostream>" << std::endl;
+  out << "#include <fstream>" << std::endl;
+  out << "#include <sstream>" << std::endl;
+  out << "#include <iomanip>" << std::endl;
+  out << std::endl;
+  out << "namespace BinFS" << std::endl;
+  out << "{" << std::endl;
+  out << std::endl;
+  out << "class BinFS" << std::endl;
+  out << "{" << std::endl;
+  out << "private:" << std::endl;
+  out << "  std::vector<std::pair<std::string, std::string>> files;" << std::endl;
+  out << "  std::string hex_to_string(const std::string &in)" << std::endl;
+  out << "  {" << std::endl;
+  out << "    std::string output;" << std::endl;
+  out << "    if ((in.length() % 2) != 0)" << std::endl;
+  out << "    {" << std::endl;
+  out << "      throw std::runtime_error(\"string is not valid length!\");" << std::endl;
+  out << "    }" << std::endl;
+  out << "    size_t cnt = in.length() / 2;" << std::endl;
+  out << "    for (size_t i = 0; cnt > i; ++i)" << std::endl;
+  out << "    {" << std::endl;
+  out << "      uint32_t s = 0;" << std::endl;
+  out << "      std::stringstream ss;" << std::endl;
+  out << "      ss << std::hex << in.substr(i * 2, 2);" << std::endl;
+  out << "      ss >> s;" << std::endl;
+  out << "      output.push_back(static_cast<unsigned char>(s));" << std::endl;
+  out << "    }" << std::endl;
+  out << "    return output;" << std::endl;
+  out << "  }" << std::endl;
+  out << "public:" << std::endl;
+  out << "  BinFS() {};" << std::endl;
+  out << "  ~BinFS() {};" << std::endl;
+  out << "  std::string get_file(const std::string &filename)" << std::endl;
+  out << "  {" << std::endl;
+  out << "    auto it = files.begin();" << std::endl;
+  out << "    for (const std::pair<std::string, std::string> &file : files)" << std::endl;
+  out << "    {" << std::endl;
+  out << "      if (file.first == filename)" << std::endl;
+  out << "      {" << std::endl;
+  out << "        return hex_to_string(file.second);" << std::endl;
+  out << "      }" << std::endl;
+  out << "      it++;" << std::endl;
+  out << "    }" << std::endl;
+  out << "    throw std::runtime_error(filename + \" not found!\");" << std::endl;
+  out << "  }" << std::endl;
+  out << "  void init()" << std::endl;
+  out << "  {" << std::endl;
+  for (const std::pair<std::string, std::string> &file : files)
+  {
+    out << "    files.emplace_back(\"" << file.first << "\",\"" << file.second << "\");" << std::endl;
+  }
+  out << "  }" << std::endl;
+  out << "};" << std::endl;
+  out << std::endl;
+  out << "} // BinFS" << std::endl;
+  out << std::endl;
+  out << "#endif // _BINFS_OUTPUT_HPP_" << std::endl;
+  out << std::endl;
+}
+
 } // BinFS

@@ -29,6 +29,7 @@ public:
   void add_file(const std::string &filename);
   void remove_file(const std::string &filename);
   std::string get_file(const std::string &filename);
+  void output_hpp_file(const std::string &filename);
 };
 
 } // BinFS

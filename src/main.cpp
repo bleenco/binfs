@@ -10,15 +10,24 @@ int main(int argc, char *argv[])
     exit(1);
   }
 
-  std::string filename(argv[1], strlen(argv[1]));
-  BinFS::BinFS *binfs = new BinFS::BinFS();
+  // BinFS::BinFS *binfs = new BinFS::BinFS();
+  // binfs->init();
+  // std::string out = binfs->get_file("CMakeLists.txt");
+  // std::ofstream output("out", std::fstream::binary);
+  // output << out;
 
-  binfs->add_file(filename);
 
-  std::string out = binfs->get_file(filename);
+  // std::string filename(argv[1], strlen(argv[1]));
+  // BinFS::BinFS *binfs = new BinFS::BinFS();
 
-  std::ofstream output("out", std::fstream::binary);
-  output << out;
+  // binfs->add_file(filename);
+
+  // binfs->output_hpp_file("include/output.hpp");
+
+  // std::string out = binfs->get_file(filename);
+
+  // std::ofstream output("out", std::fstream::binary);
+  // output << out;
 
   return 0;
 }
