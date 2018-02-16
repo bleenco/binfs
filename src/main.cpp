@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
   }
 
   std::string filename(argv[1], strlen(argv[1]));
-  BinFS *binfs = new BinFS();
+  BinFS::BinFS *binfs = new BinFS::BinFS();
 
   binfs->add_file(filename);
 

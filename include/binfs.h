@@ -8,6 +8,9 @@
 #include <sstream>
 #include <iomanip>
 
+namespace BinFS
+{
+
 class BinFS
 {
 private:
@@ -27,5 +30,7 @@ public:
   void remove_file(const std::string &filename);
   std::string get_file(const std::string &filename);
 };
+
+} // BinFS
 
 #endif // _BINFS_H_

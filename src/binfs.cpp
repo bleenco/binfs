@@ -1,5 +1,8 @@
 #include "binfs.h"
 
+namespace BinFS
+{
+
 BinFS::BinFS(std::string dirpath_) : dirpath(dirpath_){};
 
 BinFS::~BinFS(){};
@@ -109,3 +112,5 @@ std::string BinFS::get_file(const std::string &filename)
 
   throw std::runtime_error(filename + " not found!");
 }
+
+} // BinFS
