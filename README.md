@@ -4,13 +4,24 @@ This package converts any file into manageable C++ source code. It is useful for
 
 ### Installation
 
-To compile and install the library use the following:
+To compile and install the library use the following (MacOS & Linux):
 
 ```sh
 git clone https://github.com/bleenco/binfs.git
 cd binfs/
 make
 make install
+```
+
+To compile program on Windows follow this steps (assuming you have CMake installed):
+
+```sh
+git clone https://github.com/bleenco/binfs.git
+cd binfs/
+mkdir build
+cd build
+cmake -G "Visual Studio 15 2017 Win64" ..
+cmake --build . --config Release
 ```
 
 ### Usage
