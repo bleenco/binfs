@@ -76,10 +76,91 @@ std::string BinFS::hex_to_string(const std::string &in)
   return output;
 }
 
+std::string BinFS::compress(const std::string &in)
+{
+  std::string output;
+  z_stream z;
+  z.zalloc = Z_NULL;
+  z.zfree = Z_NULL;
+  z.opaque = Z_NULL;
+
+  output.resize(in.size() * 1.01 + 12);
+  int status = Z_OK;
+  status = deflateInit(&z, Z_BEST_COMPRESSION);
+
+  if (status != Z_OK)
+  {
+    exit(1);
+  }
+
+  z.total_out = 0;
+  z.next_in = (Bytef *)in.data();
+  z.avail_in = in.size();
+
+  do
+  {
+    z.next_out = (Bytef *)output.data() + z.total_out;
+    z.avail_out = output.size() - z.total_out;
+    status = deflate(&z, Z_FINISH);
+  } while (status == Z_OK);
+
+  output.resize(z.total_out);
+  deflateEnd(&z);
+
+  printf("-------------------------\n");
+  printf("Uncompressed size: %lu\n", in.size());
+  printf("Compressed size: %lu\n", z.total_out);
+
+  return output;
+}
+
+std::string BinFS::decompress(const std::string &in)
+{
+  z_stream z;
+  memset(&z, 0, sizeof(z));
+
+  if (inflateInit(&z) != Z_OK)
+  {
+    throw(std::runtime_error("inflateInit failed while decompressing."));
+  }
+
+  z.next_in = (Bytef *)in.data();
+  z.avail_in = in.size();
+
+  int ret;
+  char outbuffer[32768];
+  std::string outstring;
+
+  do
+  {
+    z.next_out = reinterpret_cast<Bytef *>(outbuffer);
+    z.avail_out = sizeof(outbuffer);
+
+    ret = inflate(&z, 0);
+
+    if (outstring.size() < z.total_out)
+    {
+      outstring.append(outbuffer, z.total_out - outstring.size());
+    }
+
+  } while (ret == Z_OK);
+
+  inflateEnd(&z);
+
+  if (ret != Z_STREAM_END)
+  {
+    std::ostringstream oss;
+    oss << "Exception during zlib decompression: (" << ret << ") " << z.msg;
+    throw(std::runtime_error(oss.str()));
+  }
+
+  return outstring;
+}
+
 void BinFS::add_file(const std::string &filename)
 {
   std::string data = read_file(filename);
-  std::string hexdata = string_to_hex(data);
+  std::string hexdata = compress(string_to_hex(data));
 
   files.emplace_back(filename, hexdata);
 }
@@ -105,7 +186,7 @@ std::string BinFS::get_file(const std::string &filename)
   {
     if (file.first == filename)
     {
-      return hex_to_string(file.second);
+      return decompress(hex_to_string(file.second));
     }
     it++;
   }

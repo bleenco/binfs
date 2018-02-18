@@ -8,6 +8,8 @@
 #include <sstream>
 #include <iomanip>
 
+#include "zlib.h"
+
 namespace BinFS
 {
 
@@ -21,6 +23,8 @@ private:
   std::string read_file(const std::string &filename);
   std::string string_to_hex(const std::string &in);
   std::string hex_to_string(const std::string &in);
+  std::string compress(const std::string &in);
+  std::string decompress(const std::string &in);
 
 public:
   BinFS(std::string dirpath_ = "");
