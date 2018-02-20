@@ -47,7 +47,7 @@ std::vector<std::string> get_files(const std::string &path, std::vector<std::str
 
 std::string parse_output_file(int argc, char *argv[])
 {
-  std::string output_file("binfs.hpp");
+  std::string output_file("bindata.hpp");
   for (int i = 1; i < argc; i++)
   {
     std::string arg(argv[i], strlen(argv[i]));
@@ -103,6 +103,7 @@ int main(int argc, char *argv[])
 
   for (const std::string &path : files)
   {
+    printf("Adding file %s ...\n", path.c_str());
     binfs->add_file(path);
   }
 

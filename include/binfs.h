@@ -7,6 +7,7 @@
 #include <fstream>
 #include <sstream>
 #include <iomanip>
+#include <assert.h>
 
 #include "zlib.h"
 
@@ -20,10 +21,10 @@ private:
   std::vector<std::pair<std::string, std::string>> files;
 
   bool file_exists(const std::string &filename);
-  std::string read_file(const std::string &filename);
-  std::string string_to_hex(const std::string &in);
-  std::string hex_to_string(const std::string &in);
-  std::string compress(const std::string &in);
+  std::vector<uint8_t> read_file(const std::string &filename);
+  std::string base64_decode(std::string const &encoded_string);
+  std::string base64_encode(unsigned char const *bytes_to_encode, unsigned int in_len);
+  void compress(void *in_data, size_t in_data_size, std::vector<uint8_t> &out_data);
   std::string decompress(const std::string &in);
 
 public:

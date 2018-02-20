@@ -11,6 +11,9 @@ recompile:
 install:
 	sudo cp build/binfs /usr/local/bin/binfs
 
+libs_unix:
+	cd 3rdparty/zlib && ./configure && make
+
 clean:
 	@rm -rf build
 

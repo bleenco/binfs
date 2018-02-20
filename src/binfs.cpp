@@ -3,6 +3,16 @@
 namespace BinFS
 {
 
+static const std::string base64_chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    "abcdefghijklmnopqrstuvwxyz"
+    "0123456789+/";
+
+static inline bool is_base64(unsigned char c)
+{
+  return (isalnum(c) || (c == '+') || (c == '/'));
+}
+
 BinFS::BinFS(std::string dirpath_) : dirpath(dirpath_){};
 
 BinFS::~BinFS(){};
@@ -13,105 +23,157 @@ bool BinFS::file_exists(const std::string &filename)
   return file.good();
 }
 
-std::string BinFS::read_file(const std::string &filename)
+std::vector<uint8_t> BinFS::read_file(const std::string &filename)
 {
-  dirpath = dirpath == "" ? "./" : dirpath + "/";
   std::string filepath(dirpath + filename);
   if (!file_exists(filepath))
   {
     throw std::runtime_error(filepath + " does not exists!");
   }
 
-  std::ifstream file(filepath, std::ios::in | std::ios::binary | std::ios::ate);
-  std::ifstream::pos_type size;
-  char *buffer = nullptr;
+  std::ifstream file(filepath, std::ios::in | std::ios::binary);
+  std::vector<uint8_t> contents((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 
-  if (file.is_open())
-  {
-    size = file.tellg();
-    buffer = new char[size];
-    file.seekg(0, std::ios::beg);
-    file.read(buffer, size);
-    file.close();
-  }
-
-  std::string str(buffer, size);
-  return str;
+  return contents;
 }
 
-std::string BinFS::string_to_hex(const std::string &in)
+std::string BinFS::base64_encode(unsigned char const *bytes_to_encode, unsigned int in_len)
 {
-  std::stringstream ss;
+  std::string ret;
+  int i = 0;
+  int j = 0;
+  unsigned char char_array_3[3];
+  unsigned char char_array_4[4];
 
-  ss << std::hex << std::setfill('0');
-  for (size_t i = 0; in.length() > i; ++i)
+  while (in_len--)
   {
-    ss << std::setw(2) << static_cast<unsigned int>(static_cast<unsigned char>(in[i]));
+    char_array_3[i++] = *(bytes_to_encode++);
+    if (i == 3)
+    {
+      char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
+      char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
+      char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
+      char_array_4[3] = char_array_3[2] & 0x3f;
+
+      for (i = 0; (i < 4); i++)
+        ret += base64_chars[char_array_4[i]];
+      i = 0;
+    }
   }
 
-  return ss.str();
+  if (i)
+  {
+    for (j = i; j < 3; j++)
+      char_array_3[j] = '\0';
+
+    char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
+    char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
+    char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
+    char_array_4[3] = char_array_3[2] & 0x3f;
+
+    for (j = 0; (j < i + 1); j++)
+      ret += base64_chars[char_array_4[j]];
+
+    while ((i++ < 3))
+      ret += '=';
+  }
+
+  return ret;
 }
 
-std::string BinFS::hex_to_string(const std::string &in)
+std::string BinFS::base64_decode(std::string const &encoded_string)
 {
-  std::string output;
+  int in_len = encoded_string.size();
+  int i = 0;
+  int j = 0;
+  int in_ = 0;
+  unsigned char char_array_4[4], char_array_3[3];
+  std::string ret;
 
-  if ((in.length() % 2) != 0)
+  while (in_len-- && (encoded_string[in_] != '=') && is_base64(encoded_string[in_]))
   {
-    throw std::runtime_error("string is not valid length!");
+    char_array_4[i++] = encoded_string[in_];
+    in_++;
+    if (i == 4)
+    {
+      for (i = 0; i < 4; i++)
+        char_array_4[i] = base64_chars.find(char_array_4[i]);
+
+      char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+      char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+      char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+
+      for (i = 0; (i < 3); i++)
+        ret += char_array_3[i];
+      i = 0;
+    }
   }
 
-  size_t cnt = in.length() / 2;
-
-  for (size_t i = 0; cnt > i; ++i)
+  if (i)
   {
-    uint32_t s = 0;
-    std::stringstream ss;
-    ss << std::hex << in.substr(i * 2, 2);
-    ss >> s;
+    for (j = i; j < 4; j++)
+      char_array_4[j] = 0;
 
-    output.push_back(static_cast<unsigned char>(s));
+    for (j = 0; j < 4; j++)
+      char_array_4[j] = base64_chars.find(char_array_4[j]);
+
+    char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+    char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+    char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+
+    for (j = 0; (j < i - 1); j++)
+      ret += char_array_3[j];
   }
 
-  return output;
+  return ret;
 }
 
-std::string BinFS::compress(const std::string &in)
+void BinFS::compress(void *in_data, size_t in_data_size, std::vector<uint8_t> &out_data)
 {
-  std::string output;
-  z_stream z;
-  z.zalloc = Z_NULL;
-  z.zfree = Z_NULL;
-  z.opaque = Z_NULL;
+  std::vector<uint8_t> buffer;
 
-  output.resize(in.size() * 1.01 + 12);
-  int status = Z_OK;
-  status = deflateInit(&z, Z_BEST_COMPRESSION);
+  const size_t BUFSIZE = 128 * 1024;
+  uint8_t temp_buffer[BUFSIZE];
 
-  if (status != Z_OK)
+  z_stream strm;
+  strm.zalloc = 0;
+  strm.zfree = 0;
+  strm.next_in = reinterpret_cast<uint8_t *>(in_data);
+  strm.avail_in = in_data_size;
+  strm.next_out = temp_buffer;
+  strm.avail_out = BUFSIZE;
+
+  deflateInit(&strm, Z_BEST_COMPRESSION);
+
+  while (strm.avail_in != 0)
   {
-    exit(1);
+    int res = deflate(&strm, Z_NO_FLUSH);
+    assert(res == Z_OK);
+    if (strm.avail_out == 0)
+    {
+      buffer.insert(buffer.end(), temp_buffer, temp_buffer + BUFSIZE);
+      strm.next_out = temp_buffer;
+      strm.avail_out = BUFSIZE;
+    }
   }
 
-  z.total_out = 0;
-  z.next_in = (Bytef *)in.data();
-  z.avail_in = in.size();
-
-  do
+  int deflate_res = Z_OK;
+  while (deflate_res == Z_OK)
   {
-    z.next_out = (Bytef *)output.data() + z.total_out;
-    z.avail_out = output.size() - z.total_out;
-    status = deflate(&z, Z_FINISH);
-  } while (status == Z_OK);
+    if (strm.avail_out == 0)
+    {
+      buffer.insert(buffer.end(), temp_buffer, temp_buffer + BUFSIZE);
+      strm.next_out = temp_buffer;
+      strm.avail_out = BUFSIZE;
+    }
+    deflate_res = deflate(&strm, Z_FINISH);
+  }
 
-  output.resize(z.total_out);
-  deflateEnd(&z);
+  assert(deflate_res == Z_STREAM_END);
+  buffer.insert(buffer.end(), temp_buffer, temp_buffer + BUFSIZE - strm.avail_out);
+  deflateEnd(&strm);
 
-  printf("-------------------------\n");
-  printf("Uncompressed size: %lu\n", in.size());
-  printf("Compressed size: %lu\n", z.total_out);
-
-  return output;
+  out_data.swap(buffer);
 }
 
 std::string BinFS::decompress(const std::string &in)
@@ -159,10 +221,11 @@ std::string BinFS::decompress(const std::string &in)
 
 void BinFS::add_file(const std::string &filename)
 {
-  std::string data = read_file(filename);
-  std::string hexdata = compress(string_to_hex(data));
+  std::vector<uint8_t> contents = read_file(filename);
+  std::vector<uint8_t> cdata;
 
-  files.emplace_back(filename, hexdata);
+  compress(contents.data(), contents.size(), cdata);
+  files.emplace_back(filename, base64_encode(cdata.data(), cdata.size()));
 }
 
 void BinFS::remove_file(const std::string &filename)
@@ -186,7 +249,7 @@ std::string BinFS::get_file(const std::string &filename)
   {
     if (file.first == filename)
     {
-      return decompress(hex_to_string(file.second));
+      return decompress(base64_decode(file.second));
     }
     it++;
   }
@@ -199,70 +262,157 @@ void BinFS::output_hpp_file(const std::string &filename)
   std::ofstream out;
   out.open(filename);
 
-  out << "#ifndef _BINFS_OUTPUT_HPP_" << std::endl;
-  out << "#define _BINFS_OUTPUT_HPP_" << std::endl;
-  out << std::endl;
-  out << "#include <string>" << std::endl;
-  out << "#include <vector>" << std::endl;
-  out << "#include <iostream>" << std::endl;
-  out << "#include <fstream>" << std::endl;
-  out << "#include <sstream>" << std::endl;
-  out << "#include <iomanip>" << std::endl;
-  out << std::endl;
-  out << "namespace BinFS" << std::endl;
-  out << "{" << std::endl;
-  out << std::endl;
-  out << "class BinFS" << std::endl;
-  out << "{" << std::endl;
-  out << "private:" << std::endl;
-  out << "  std::vector<std::pair<std::string, std::string>> files;" << std::endl;
-  out << "  std::string hex_to_string(const std::string &in)" << std::endl;
-  out << "  {" << std::endl;
-  out << "    std::string output;" << std::endl;
-  out << "    if ((in.length() % 2) != 0)" << std::endl;
-  out << "    {" << std::endl;
-  out << "      throw std::runtime_error(\"string is not valid length!\");" << std::endl;
-  out << "    }" << std::endl;
-  out << "    size_t cnt = in.length() / 2;" << std::endl;
-  out << "    for (size_t i = 0; cnt > i; ++i)" << std::endl;
-  out << "    {" << std::endl;
-  out << "      uint32_t s = 0;" << std::endl;
-  out << "      std::stringstream ss;" << std::endl;
-  out << "      ss << std::hex << in.substr(i * 2, 2);" << std::endl;
-  out << "      ss >> s;" << std::endl;
-  out << "      output.push_back(static_cast<unsigned char>(s));" << std::endl;
-  out << "    }" << std::endl;
-  out << "    return output;" << std::endl;
-  out << "  }" << std::endl;
-  out << "public:" << std::endl;
-  out << "  BinFS() {};" << std::endl;
-  out << "  ~BinFS() {};" << std::endl;
-  out << "  std::string get_file(const std::string &filename)" << std::endl;
-  out << "  {" << std::endl;
-  out << "    auto it = files.begin();" << std::endl;
-  out << "    for (const std::pair<std::string, std::string> &file : files)" << std::endl;
-  out << "    {" << std::endl;
-  out << "      if (file.first == filename)" << std::endl;
-  out << "      {" << std::endl;
-  out << "        return hex_to_string(file.second);" << std::endl;
-  out << "      }" << std::endl;
-  out << "      it++;" << std::endl;
-  out << "    }" << std::endl;
-  out << "    throw std::runtime_error(filename + \" not found!\");" << std::endl;
-  out << "  }" << std::endl;
-  out << "  void init()" << std::endl;
-  out << "  {" << std::endl;
+  out << ""
+  "#ifndef _BINFS_OUTPUT_HPP_\n"
+  "#define _BINFS_OUTPUT_HPP_\n\n";
+
+  out << "// This file is auto-generated by BinFS" << std::endl;
+  out << "// Included files:" << std::endl;
+
+  for (const std::pair<std::string, std::string> &file : files)
+  {
+    out << "// " << file.first << std::endl;
+  }
+
+  out << "\n"
+  "#include <string>\n"
+  "#include <vector>\n"
+  "#include <iostream>\n"
+  "#include <fstream>\n"
+  "#include <sstream>\n"
+  "#include <iomanip>\n"
+  "#include <zlib.h>\n\n"
+  "namespace BinFS\n"
+  "{\n"
+  "\n"
+  "class BinFS\n"
+  "{\n"
+  "private:\n"
+  "  std::vector<std::pair<std::string, std::string>> files;\n"
+  "\n"
+  "  std::string base64_chars =\n"
+  "      \"ABCDEFGHIJKLMNOPQRSTUVWXYZ\"\n"
+  "      \"abcdefghijklmnopqrstuvwxyz\"\n"
+  "      \"0123456789+/\";\n"
+  "\n"
+  "  bool is_base64(unsigned char c)\n"
+  "  {\n"
+  "    return (isalnum(c) || (c == '+') || (c == '/'));\n"
+  "  }\n"
+  "\n"
+  "  std::string decompress(const std::string &in)\n"
+  "  {\n"
+  "    z_stream z;\n"
+  "    memset(&z, 0, sizeof(z));\n"
+  "\n"
+  "    if (inflateInit(&z) != Z_OK)\n"
+  "    {\n"
+  "      throw(std::runtime_error(\"inflateInit failed while decompressing.\"));\n"
+  "    }\n"
+  "\n"
+  "   z.next_in = (Bytef *)in.data();\n"
+  "   z.avail_in = in.size();\n"
+  "\n"
+  "   int ret;\n"
+  "   char outbuffer[32768];\n"
+  "   std::string outstring;\n"
+  "\n"
+  "   do\n"
+  "   {\n"
+  "     z.next_out = reinterpret_cast<Bytef *>(outbuffer);\n"
+  "     z.avail_out = sizeof(outbuffer);\n"
+  "\n"
+  "      ret = inflate(&z, 0);\n"
+  "\n"
+  "      if (outstring.size() < z.total_out)\n"
+  "      {\n"
+  "        outstring.append(outbuffer, z.total_out - outstring.size());\n"
+  "      }\n"
+  "\n"
+  "    } while (ret == Z_OK);\n"
+  "\n"
+  "    inflateEnd(&z);\n"
+  "\n"
+  "    if (ret != Z_STREAM_END)\n"
+  "    {\n"
+  "      std::ostringstream oss;\n"
+  "      oss << \"Exception during zlib decompression: (\" << ret << \") \" << z.msg;\n"
+  "      throw(std::runtime_error(oss.str()));\n"
+  "    }\n"
+  "\n"
+  "    return outstring;\n"
+  "  }\n"
+  "  std::string base64_decode(const std::string &encoded_string)\n"
+  "  {\n"
+  "    int in_len = encoded_string.size();\n"
+  "    int i = 0;\n"
+  "    int j = 0;\n"
+  "    int in_ = 0;\n"
+  "    unsigned char char_array_4[4], char_array_3[3];\n"
+  "    std::string ret;\n"
+  "\n"
+  "    while (in_len-- && (encoded_string[in_] != '=') && is_base64(encoded_string[in_]))\n"
+  "    {\n"
+  "      char_array_4[i++] = encoded_string[in_];\n"
+  "      in_++;\n"
+  "      if (i == 4)\n"
+  "      {\n"
+  "        for (i = 0; i < 4; i++)\n"
+  "        char_array_4[i] = base64_chars.find(char_array_4[i]);\n"
+  "        char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);\n"
+  "        char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);\n"
+  "        char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];\n"
+  "\n"
+  "        for (i = 0; (i < 3); i++)\n"
+  "          ret += char_array_3[i];\n"
+  "        i = 0;\n"
+  "      }\n"
+  "    }\n"
+  "\n"
+  "    if (i)\n"
+  "    {\n"
+  "      for (j = i; j < 4; j++)\n"
+  "        char_array_4[j] = 0;\n"
+  "\n"
+  "      for (j = 0; j < 4; j++)\n"
+  "        char_array_4[j] = base64_chars.find(char_array_4[j]);\n"
+  "\n"
+  "      char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);\n"
+  "      char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);\n"
+  "      char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];\n"
+  "\n"
+  "      for (j = 0; (j < i - 1); j++)\n"
+  "        ret += char_array_3[j];\n"
+  "    }\n"
+  "\n"
+  "    return ret;\n"
+  "  }\n"
+  "public:\n"
+  "  void init()\n"
+  "  {\n";
   for (const std::pair<std::string, std::string> &file : files)
   {
     out << "    files.emplace_back(\"" << file.first << "\",\"" << file.second << "\");" << std::endl;
   }
-  out << "  }" << std::endl;
-  out << "};" << std::endl;
-  out << std::endl;
-  out << "} // BinFS" << std::endl;
-  out << std::endl;
-  out << "#endif // _BINFS_OUTPUT_HPP_" << std::endl;
-  out << std::endl;
+  out << ""
+  "  }\n"
+  "  std::string get_file(const char *filename)\n"
+  "  {\n"
+  "    for (const std::pair<std::string, std::string> &file : files)\n"
+  "    {\n"
+  "      if (file.first == filename)\n"
+  "      {\n"
+  "        return decompress(base64_decode(file.second));\n"
+  "      }\n"
+  "    }\n"
+  "    std::string fname(filename);\n"
+  "    throw(std::runtime_error(fname + \" not found!\"));\n"
+  "  }\n"
+  "};\n"
+  "\n"
+  "} // BinFS\n"
+  "\n"
+  "#endif\n";
 }
 
 } // BinFS
