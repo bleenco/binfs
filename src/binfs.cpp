@@ -15,8 +15,13 @@ bool BinFS::file_exists(const std::string &filename)
 
 std::string BinFS::read_file(const std::string &filename)
 {
-  dirpath = dirpath == "" ? "./" : dirpath + "/";
-  std::string filepath(dirpath + filename);
+  std::string filepath = filename;
+  // if dirpath is empty and filename is from the root, leave it alone
+  if (!((filename[0] == '/') && (dirpath == "")))
+  {
+      dirpath = dirpath == "" ? "./" : dirpath + "/";
+      filepath = dirpath + filename;
+  }
   if (!file_exists(filepath))
   {
     throw std::runtime_error(filepath + " does not exists!");
